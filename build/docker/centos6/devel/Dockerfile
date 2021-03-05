@@ -5,13 +5,16 @@ FROM ${REPOSITORY}:${VERSION}
 # add vscode server
 RUN yum repolist && \
     yum -y install \
+        bash-completion \
+        byobu \
+        cgdb \
+        emacs-nox \
+        jq \
+        the_silver_searcher \
         tmux \
         tree \
-        emacs-nox \
         vim \
-        bash-completion \
-        jq \
-        cgdb && \
+        zsh && \
     yum clean all && \
     rm -rf /var/cache/yum
 
@@ -19,14 +22,20 @@ WORKDIR /tmp
 RUN source /opt/rh/devtoolset-8/enable && \
     source /opt/rh/rh-python36/enable && \
     pip3 install \
+        lxml \
+        psutil \
         python-dateutil \
-        subprocess32 \
-        psutil && \
+        subprocess32 && \
     mkdir fdb-joshua && \
     cd fdb-joshua && \
     git clone --branch code_pipeline https://github.com/FoundationDB/fdb-joshua . && \
     pip3 install /tmp/fdb-joshua && \
     cd /tmp && \
+    curl -Ls https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl && \
+    chmod 755 /usr/local/bin/kubectl && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip -qq awscliv2.zip && \
+    ./aws/install && \
     rm -rf /tmp/*
 
 ARG OLD_FDB_BINARY_DIR=/app/deploy/global_data/oldBinaries/
@@ -45,17 +54,28 @@ RUN mkdir -p ${OLD_FDB_BINARY_DIR} \
     ln -s ${OLD_TLS_LIBRARY_DIR}/FDBGnuTLS.so /usr/lib/foundationdb/plugins/FDBGnuTLS.so
 
 WORKDIR /root
-RUN echo -en "\n"\
-    "source /opt/rh/devtoolset-8/enable\n"\
-    "source /opt/rh/rh-python36/enable\n"\
-    "source /opt/rh/rh-ruby24/enable\n"\
-    "\n"\
-    "function cmk() {\n"\
-    "    cmake -S ${HOME}/src/foundationdb -B build_output -D USE_CCACHE=1 -D RocksDB_ROOT=/opt/rocksdb-6.10.1 -G Ninja && ninja -C build_output -j 84\n"\
-    "}\n"\
-    "function ct() {\n"\
-    "    cd ${HOME}/build_output && ctest -j 32 --output-on-failure\n"\
-    "}\n"\
-    "function j() {\n"\
-    "   python3 -m joshua.joshua --cluster-file /etc/foundationdb/cluster-file \"\${@}\"\n"\
-    "}\n" >> .bashrc
+RUN curl -Ls https://update.code.visualstudio.com/latest/server-linux-x64/stable -o /tmp/vscode-server-linux-x64.tar.gz && \
+    mkdir -p .vscode-server/bin/latest && \
+    tar --strip-components 1 --no-same-owner --directory .vscode-server/bin/latest -xf /tmp/vscode-server-linux-x64.tar.gz && \
+    touch .vscode-server/bin/latest/0 && \
+    rm -rf /tmp/*
+RUN rm -f /root/anaconda-ks.cfg && \
+    printf '%s\n' \
+    'source /opt/rh/devtoolset-8/enable' \
+    'source /opt/rh/rh-python36/enable' \
+    'source /opt/rh/rh-ruby26/enable' \
+    '' \
+    'function cmk() {' \
+    '    cmake -S ${HOME}/src/foundationdb -B ${HOME}/build_output -D USE_CCACHE=1 -D RocksDB_ROOT=/opt/rocksdb-6.10.1 -G Ninja && ninja -C build_output -j 84' \
+    '}' \
+    'function ct() {' \
+    '    cd ${HOME}/build_output && ctest -j 32 --output-on-failure' \
+    '}' \
+    'function j() {' \
+    '   python3 -m joshua.joshua "${@}"' \
+    '}' \
+    'function jsd() {' \
+    '   j start --tarball $(find ${HOME}/build_output/packages -name correctness\*.tar.gz) "${@}"' \
+    '}' \
+    '' \
+    >> .bashrc
