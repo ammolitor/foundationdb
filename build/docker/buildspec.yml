@@ -64,6 +64,20 @@ phases:
         --tag foundationdb/distcc:latest
         .
       - ################################################################################
+      - # CENTOS 7 foundationdb/ycsb
+      - ################################################################################
+      - cd ${CODEBUILD_SRC_DIR}/build/docker/centos7/ycsb
+      - docker pull ${REGISTRY}/foundationdb/ycsb:centos7-latest || true
+      - docker build --cache-from ${REGISTRY}/foundationdb/ycsb:centos7-latest
+        --build-arg REPOSITORY=${REGISTRY}/foundationdb/build
+        --tag ${REGISTRY}/foundationdb/ycsb:centos7-${DATE_STR}-${COMMIT_HASH}
+        --tag ${REGISTRY}/foundationdb/ycsb:centos7-latest
+        --tag ${REGISTRY}/foundationdb/ycsb:latest
+        --tag foundationdb/ycsb:centos7-${DATE_STR}-${COMMIT_HASH}
+        --tag foundationdb/ycsb:centos7-latest
+        --tag foundationdb/ycsb:latest
+        .
+      - ################################################################################
       - # CENTOS 6 foundationdb/build
       - ################################################################################
       - cd ${CODEBUILD_SRC_DIR}/build/docker/centos6/build
@@ -117,6 +131,10 @@ phases:
       - docker push ${REGISTRY}/foundationdb/distcc:centos7-${DATE_STR}-${COMMIT_HASH}
       - docker push ${REGISTRY}/foundationdb/distcc:centos7-latest
       - docker push ${REGISTRY}/foundationdb/distcc:latest
+      - # PUSH TO ycsb ECR
+      - docker push ${REGISTRY}/foundationdb/ycsb:centos7-${DATE_STR}-${COMMIT_HASH}
+      - docker push ${REGISTRY}/foundationdb/ycsb:centos7-latest
+      - docker push ${REGISTRY}/foundationdb/ycsb:latest
       - ################################################################################
       - # CENTOS 7 PUSH TO DOCKERHUB
       - ################################################################################
@@ -132,6 +150,10 @@ phases:
       - docker push foundationdb/distcc:centos7-${DATE_STR}-${COMMIT_HASH}
       - docker push foundationdb/distcc:centos7-latest
       - docker push foundationdb/distcc:latest
+      - # PUSH TO distcc DOCKERHUB
+      - docker push foundationdb/ycsb:centos7-${DATE_STR}-${COMMIT_HASH}
+      - docker push foundationdb/ycsb:centos7-latest
+      - docker push foundationdb/ycsb:latest
       - ################################################################################
       - # CENTOS 6 PUSH TO ECR
       - ################################################################################
